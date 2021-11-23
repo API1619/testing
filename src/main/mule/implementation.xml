@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="abcsalesFlow" doc:id="01d17c6a-2d44-4d57-829a-19a52fd1742b" >
+		<set-variable value="#[attributes.queryParams.id default '']" doc:name="IdQparam" doc:id="1f299ab8-89b4-4eba-b7de-7929316910fe" variableName="ID"/>
+		<choice doc:name="Choice" doc:id="ef7d6fa6-f307-45e0-8ac5-b224eabbfb30" >
+			<when expression="#[vars.ID != '']">
+				<flow-ref doc:name="Flow Reference" doc:id="7f628367-4fb9-495a-91fd-a90c8208e1cc" name="getSalesByQueryID"/>
+			</when>
+			<otherwise>
+				<salesforce:query doc:name="Query" doc:id="1203599f-e89a-4618-8b72-dbe9c65b1471" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query><![CDATA[SELECT Product_ID__c,Name,Product_Price__c,Product_Quantity__c FROM Product__c]]></salesforce:salesforce-query>
+		</salesforce:query>
+			</otherwise>
+		</choice>
+		<ee:transform doc:name="Transform Message" doc:id="965e211e-ae29-4946-9d42-428c2811475c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="4025c78d-4ba1-40af-b392-2efbdabe4050" message="#[payload]"/>
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="36b333ec-b343-4c29-85c5-d96f04c90bed" type="SALESFORCE:CONNECTIVITY">
+				<set-payload value="Cannot Connect to Salesforce" doc:name="Set Payload" doc:id="1765ce2d-1b34-418d-8fe6-86e364fcd2ef" />
+				<logger level="INFO" doc:name="Logger" doc:id="7904e41e-ff31-4fd4-a1e4-cce948689e0a" message="#[Payload]"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="getSalesByQueryID" doc:id="3326452d-2eb8-4d8c-ab83-ba7c55809c8b" >
+		<salesforce:query doc:name="Query" doc:id="59cdfbce-cb33-41f4-b2f9-efd03b6077f9" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[Select Product_ID__c,Name,Product_Price__c,Product_Quantity__c from Product__c WHERE Product_ID__c = ':ID']]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"ID" : attributes.queryParams.id
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="bdeb458a-bae3-4fc5-b464-3616f37c7daa" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="0ce3f491-d530-421d-82e5-2530fd57522e" />
+	</flow>
+	<flow name="getSalesByID" doc:id="4727c0cd-1726-4722-9e83-40bf11aba2e5" >
+		<salesforce:query doc:name="Query" doc:id="f68d1b91-3ba8-4d7c-863a-9c576ec2466f" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[Select Product_ID__c,Name,Product_Price__c,Product_Quantity__c from Product__c WHERE Product_ID__c = ':ID']]></salesforce:salesforce-query>
+			<salesforce:parameters ><![CDATA[#[output application/java
+---
+{
+	"ID" : attributes.uriParams.ID
+}]]]></salesforce:parameters>
+		</salesforce:query>
+		<ee:transform doc:name="Transform Message" doc:id="6e26ef80-219a-4aff-802f-faba35f86053" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="63d9797a-bdb2-45fd-890f-7c032bfd8b7a" message="#[payload]"/>
+	</flow>
+</mule>
